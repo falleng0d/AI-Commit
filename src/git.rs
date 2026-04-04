@@ -86,7 +86,7 @@ fn tracked_changes(repo_root: &Path, max_chars: usize) -> Result<String> {
     Ok(truncate_with_notice(&combined, max_chars))
 }
 
-fn load_root_instructions(repo_root: &Path, max_chars: usize) -> Result<Option<String>> {
+pub(crate) fn load_root_instructions(repo_root: &Path, max_chars: usize) -> Result<Option<String>> {
     let claude = repo_root.join("CLAUDE.md");
     if claude.is_file() {
         let content = std::fs::read_to_string(&claude)
@@ -137,7 +137,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::truncate_with_notice;
+    use std::fs;
+
+    use tempfile::tempdir;
+
+    use super::{load_root_instructions, truncate_with_notice};
 
     #[test]
     fn keeps_short_text_unchanged() {
@@ -147,5 +151,28 @@ mod tests {
     #[test]
     fn truncates_long_text_with_marker() {
         assert_eq!(truncate_with_notice("abcdef", 4), "abcd\n\n[truncated]");
+    }
+
+    #[test]
+    fn prefers_claude_over_agents() {
+        let temp = tempdir().unwrap();
+        fs::write(temp.path().join("CLAUDE.md"), "claude rules").unwrap();
+        fs::write(temp.path().join("AGENTS.md"), "agents rules").unwrap();
+
+        assert_eq!(
+            load_root_instructions(temp.path(), 100).unwrap(),
+            Some("claude rules".to_string())
+        );
+    }
+
+    #[test]
+    fn falls_back_to_agents_when_claude_missing() {
+        let temp = tempdir().unwrap();
+        fs::write(temp.path().join("AGENTS.md"), "agents rules").unwrap();
+
+        assert_eq!(
+            load_root_instructions(temp.path(), 100).unwrap(),
+            Some("agents rules".to_string())
+        );
     }
 }

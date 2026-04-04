@@ -96,22 +96,7 @@ impl AiClient {
             return Ok(self.model.clone());
         }
 
-        for preferred in [
-            "qwen-3-235b-a22b-instruct-2507",
-            "llama3.1-8b",
-            "gpt-oss-120b",
-        ] {
-            if payload.data.iter().any(|entry| entry.id == preferred) {
-                return Ok(preferred.to_string());
-            }
-        }
-
-        payload
-            .data
-            .into_iter()
-            .next()
-            .map(|entry| entry.id)
-            .ok_or_else(|| anyhow!("AI provider returned no models"))
+        select_model(&self.model, &payload.data)
     }
 }
 
@@ -153,9 +138,33 @@ fn sanitize_commit_message(message: &str) -> String {
     line.trim_matches('`').trim_matches('"').to_string()
 }
 
+fn select_model(requested_model: &str, available_models: &[ModelEntry]) -> Result<String> {
+    if available_models
+        .iter()
+        .any(|entry| entry.id == requested_model)
+    {
+        return Ok(requested_model.to_string());
+    }
+
+    for preferred in [
+        "qwen-3-235b-a22b-instruct-2507",
+        "llama3.1-8b",
+        "gpt-oss-120b",
+    ] {
+        if available_models.iter().any(|entry| entry.id == preferred) {
+            return Ok(preferred.to_string());
+        }
+    }
+
+    available_models
+        .first()
+        .map(|entry| entry.id.clone())
+        .ok_or_else(|| anyhow!("AI provider returned no models"))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::sanitize_commit_message;
+    use super::{ModelEntry, sanitize_commit_message, select_model};
 
     #[test]
     fn strips_quotes_and_code_ticks() {
@@ -166,6 +175,52 @@ mod tests {
         assert_eq!(
             sanitize_commit_message("\"fix: patch bug\""),
             "fix: patch bug"
+        );
+    }
+
+    #[test]
+    fn keeps_requested_model_when_available() {
+        let models = vec![
+            ModelEntry {
+                id: "custom-model".to_string(),
+            },
+            ModelEntry {
+                id: "llama3.1-8b".to_string(),
+            },
+        ];
+
+        assert_eq!(
+            select_model("custom-model", &models).unwrap(),
+            "custom-model"
+        );
+    }
+
+    #[test]
+    fn falls_back_to_preferred_supported_model() {
+        let models = vec![
+            ModelEntry {
+                id: "llama3.1-8b".to_string(),
+            },
+            ModelEntry {
+                id: "another-model".to_string(),
+            },
+        ];
+
+        assert_eq!(
+            select_model("missing-model", &models).unwrap(),
+            "llama3.1-8b"
+        );
+    }
+
+    #[test]
+    fn uses_first_available_model_when_no_preferred_match_exists() {
+        let models = vec![ModelEntry {
+            id: "fallback-model".to_string(),
+        }];
+
+        assert_eq!(
+            select_model("missing-model", &models).unwrap(),
+            "fallback-model"
         );
     }
 }

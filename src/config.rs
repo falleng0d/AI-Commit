@@ -55,7 +55,7 @@ impl Config {
     }
 }
 
-fn find_git_root(start: &Path) -> Result<PathBuf> {
+pub(crate) fn find_git_root(start: &Path) -> Result<PathBuf> {
     let mut current = start;
 
     loop {
@@ -75,7 +75,11 @@ fn normalize_host(host: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::normalize_host;
+    use std::fs;
+
+    use tempfile::tempdir;
+
+    use super::{find_git_root, normalize_host};
 
     #[test]
     fn trims_trailing_slash_from_host() {
@@ -83,5 +87,17 @@ mod tests {
             normalize_host("https://example.com/v1/"),
             "https://example.com/v1"
         );
+    }
+
+    #[test]
+    fn finds_git_root_from_nested_directory() {
+        let temp = tempdir().unwrap();
+        let repo_root = temp.path().join("repo");
+        let nested = repo_root.join("a").join("b");
+
+        fs::create_dir_all(repo_root.join(".git")).unwrap();
+        fs::create_dir_all(&nested).unwrap();
+
+        assert_eq!(find_git_root(&nested).unwrap(), repo_root);
     }
 }
