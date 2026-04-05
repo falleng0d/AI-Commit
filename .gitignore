@@ -3,3 +3,5 @@
 .cargo/
 build/
 target/
+tools/
+tmp/
