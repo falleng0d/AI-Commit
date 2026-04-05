@@ -1,6 +1,6 @@
 [package]
 name = "ai-commits"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Mateus Junior <mateus@matj.dev>"]
 edition = "2024"
 description = "Generate semantic git commit messages from repository context using an AI provider."
