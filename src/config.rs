@@ -48,7 +48,7 @@ impl Config {
             model: cli
                 .model
                 .or(file_config.model)
-                .unwrap_or_else(|| "qwen-3-235b-a22b-instruct-2507".to_string()),
+                .unwrap_or_else(|| "gpt-4o".to_string()),
             commit_limit: cli.commit_limit,
             max_diff_chars: cli.max_diff_chars,
             max_instructions_chars: cli.max_instructions_chars,
