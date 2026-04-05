@@ -28,7 +28,7 @@ impl Config {
         let host = cli
             .host
             .or(file_config.host)
-            .unwrap_or_else(|| "https://api.cerebras.ai/v1".to_string());
+            .unwrap_or_else(|| "https://api.openai.com/v1".to_string());
 
         let api_key = cli.api_key.or(file_config.api_key).ok_or_else(|| {
             anyhow!(
