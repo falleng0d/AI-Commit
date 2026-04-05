@@ -20,12 +20,10 @@ while ($true) {
 
     $run = $json | ConvertFrom-Json
     $timestamp = Get-Date -Format o
-    $conclusion = if ($run.conclusion) { $run.conclusion } else { "pending" }
-
-    Write-Host "$timestamp [$($run.workflowName)] branch=$($run.headBranch) status=$($run.status) conclusion=$conclusion"
-    Write-Host $run.url
 
     if ($run.status -eq $DesiredStatus) {
+        Write-Host "$timestamp [$($run.workflowName)] branch=$($run.headBranch) status=$($run.status) conclusion=$($run.conclusion)"
+
         if ($DesiredStatus -ne "completed") {
             exit 0
         }
@@ -34,11 +32,11 @@ while ($true) {
             exit 0
         }
 
-        Write-Error "Workflow run $RunId completed with conclusion '$($run.conclusion)'"
         exit 1
     }
 
     if ($run.status -eq "completed" -and $run.conclusion -and $run.conclusion -ne $DesiredConclusion) {
+        Write-Host "$timestamp [$($run.workflowName)] branch=$($run.headBranch) status=$($run.status) conclusion=$($run.conclusion)"
         Write-Error "Workflow run $RunId completed early with conclusion '$($run.conclusion)'"
         exit 1
     }
