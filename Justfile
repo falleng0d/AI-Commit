@@ -6,9 +6,6 @@ crate_name := "ai-commits"
 default_branch := "master"
 ci_workflow := "ci.yml"
 release_workflow := "release-plz.yml"
-gnu_lld := "C:/ProgramData/chocolatey/lib/rust/tools/lib/rustlib/x86_64-pc-windows-gnu/bin/rust-lld.exe"
-
-export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER := "C:/ProgramData/chocolatey/lib/rust/tools/lib/rustlib/x86_64-pc-windows-gnu/bin/rust-lld.exe"
 
 default:
   just --list
@@ -26,7 +23,10 @@ fmt-check:
   cargo fmt --check
 
 lint:
-  cargo clippy --config 'target.x86_64-pc-windows-gnu.linker="{{gnu_lld}}"' --all-targets --all-features --fix --allow-dirty -- -D warnings
+  cargo clippy --all-targets --all-features -- -D warnings
+
+lint-fix:
+  cargo clippy --fix --allow-dirty --allow-staged --all-targets --all-features
 
 test:
   cargo test
