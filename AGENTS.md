@@ -13,9 +13,8 @@ This repository contains `ai-commit`, a Rust CLI that generates a semantic git c
 ## Local Commands
 
 - Format: `just fmt`
-- Check formatting: `just fmt-check`
-- Lint: `just lint`
-- Test: `just test`
+- Check: `just check`
+- Test: `just test` (runs with `check`) 
 - Build: `just build`
 - Build release binary: `just build-release`
 - Package check: `just package`
@@ -40,5 +39,5 @@ If `release-plz` is not on `PATH`, set `RELEASE_PLZ` or place the binary at `too
 
 ## Before Finishing
 
-- Run at least `just fmt-check`, `just lint`, and `just test`.
+- Run `just check` and `just fmt` as needed.
 - If release-related files changed, also run `just publish-dry-run`.
