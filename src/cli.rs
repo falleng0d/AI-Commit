@@ -7,13 +7,13 @@ use clap::Parser;
     about = "Generate semantic commit messages from repository context"
 )]
 pub struct Cli {
-    #[arg(long, env = "OPENAI_HOST")]
+    #[arg(long)]
     pub host: Option<String>,
 
-    #[arg(long, env = "OPENAI_KEY")]
+    #[arg(long)]
     pub api_key: Option<String>,
 
-    #[arg(long, env = "OPENAI_MODEL")]
+    #[arg(long)]
     pub model: Option<String>,
 
     #[arg(long, default_value_t = 30)]

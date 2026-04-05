@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
+use serde::Deserialize;
 
 use crate::cli::Cli;
 
@@ -21,21 +22,20 @@ impl Config {
             std::env::current_dir().context("failed to determine current directory")?;
         let repo_root = find_git_root(&current_dir)?;
 
-        let env_path = repo_root.join(".env");
-        if env_path.is_file() {
-            let _ = dotenvy::from_path(&env_path);
-        }
+        let config_path = config_file_path()?;
+        let file_config = load_file_config(&config_path)?;
 
         let host = cli
             .host
-            .or_else(|| std::env::var("OPENAI_HOST").ok())
+            .or(file_config.host)
             .unwrap_or_else(|| "https://api.cerebras.ai/v1".to_string());
 
-        let api_key = cli
-            .api_key
-            .or_else(|| std::env::var("OPENAI_KEY").ok())
-            .or_else(|| std::env::var("OPENAI_API_KEY").ok())
-            .ok_or_else(|| anyhow!("missing API key; set OPENAI_KEY or pass --api-key"))?;
+        let api_key = cli.api_key.or(file_config.api_key).ok_or_else(|| {
+            anyhow!(
+                "missing API key; set `api_key` in {} or pass --api-key",
+                config_path.display()
+            )
+        })?;
 
         if cli.commit_limit == 0 {
             bail!("--commit-limit must be greater than 0");
@@ -47,12 +47,45 @@ impl Config {
             api_key,
             model: cli
                 .model
+                .or(file_config.model)
                 .unwrap_or_else(|| "qwen-3-235b-a22b-instruct-2507".to_string()),
             commit_limit: cli.commit_limit,
             max_diff_chars: cli.max_diff_chars,
             max_instructions_chars: cli.max_instructions_chars,
         })
     }
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileConfig {
+    #[serde(alias = "openai_host")]
+    host: Option<String>,
+    #[serde(alias = "openai_key")]
+    api_key: Option<String>,
+    #[serde(alias = "openai_model")]
+    model: Option<String>,
+}
+
+fn load_file_config(config_path: &Path) -> Result<FileConfig> {
+    if !config_path.is_file() {
+        return Ok(FileConfig::default());
+    }
+
+    let content = std::fs::read_to_string(config_path)
+        .with_context(|| format!("failed to read {}", config_path.display()))?;
+
+    serde_yaml::from_str(&content)
+        .with_context(|| format!("failed to parse {}", config_path.display()))
+}
+
+pub(crate) fn config_file_path() -> Result<PathBuf> {
+    let config_dir =
+        dirs::config_dir().ok_or_else(|| anyhow!("failed to determine OS config directory"))?;
+    Ok(config_file_path_from_dir(&config_dir))
+}
+
+pub(crate) fn config_file_path_from_dir(config_dir: &Path) -> PathBuf {
+    config_dir.join("ai-commit").join("config.yml")
 }
 
 pub(crate) fn find_git_root(start: &Path) -> Result<PathBuf> {
@@ -79,7 +112,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::{find_git_root, normalize_host};
+    use super::{config_file_path_from_dir, find_git_root, load_file_config, normalize_host};
 
     #[test]
     fn trims_trailing_slash_from_host() {
@@ -99,5 +132,48 @@ mod tests {
         fs::create_dir_all(&nested).unwrap();
 
         assert_eq!(find_git_root(&nested).unwrap(), repo_root);
+    }
+
+    #[test]
+    fn builds_expected_config_path() {
+        let temp = tempdir().unwrap();
+        assert_eq!(
+            config_file_path_from_dir(temp.path()),
+            temp.path().join("ai-commit").join("config.yml")
+        );
+    }
+
+    #[test]
+    fn loads_yaml_config() {
+        let temp = tempdir().unwrap();
+        let config_path = temp.path().join("config.yml");
+        fs::write(
+            &config_path,
+            "host: https://example.com/v1\napi_key: test-key\nmodel: test-model\n",
+        )
+        .unwrap();
+
+        let config = load_file_config(&config_path).unwrap();
+
+        assert_eq!(config.host.as_deref(), Some("https://example.com/v1"));
+        assert_eq!(config.api_key.as_deref(), Some("test-key"));
+        assert_eq!(config.model.as_deref(), Some("test-model"));
+    }
+
+    #[test]
+    fn supports_openai_prefixed_yaml_keys() {
+        let temp = tempdir().unwrap();
+        let config_path = temp.path().join("config.yml");
+        fs::write(
+            &config_path,
+            "openai_host: https://example.com/v1\nopenai_key: test-key\nopenai_model: test-model\n",
+        )
+        .unwrap();
+
+        let config = load_file_config(&config_path).unwrap();
+
+        assert_eq!(config.host.as_deref(), Some("https://example.com/v1"));
+        assert_eq!(config.api_key.as_deref(), Some("test-key"));
+        assert_eq!(config.model.as_deref(), Some("test-model"));
     }
 }
