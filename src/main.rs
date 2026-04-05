@@ -19,9 +19,10 @@ fn run() -> Result<()> {
     let cli = Cli::parse_args();
     let config = config::Config::load(cli)?;
     let repo = git::RepositoryContext::gather(&config)?;
-    let (prompt_text, summary) = prompt::build_prompt_with_summary(&repo);
+    let prompt_text = prompt::build_prompt(&repo);
 
     if config.dry_run {
+        let (_, summary) = prompt::build_prompt_with_summary(&repo);
         println!("{}", prompt::format_dry_run_output(&prompt_text, &summary));
         return Ok(());
     }

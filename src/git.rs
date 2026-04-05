@@ -58,13 +58,7 @@ fn recent_commits(
 ) -> Result<Vec<String>> {
     let log = git_output(
         repo_root,
-        [
-            "log",
-            &format!("--author={user_name}|{user_email}"),
-            "--regexp-ignore-case",
-            &format!("-n{limit}"),
-            "--pretty=format:%s",
-        ],
+        recent_commit_log_args(user_name, user_email, limit),
     )?;
 
     let commits = log
@@ -75,6 +69,17 @@ fn recent_commits(
         .collect();
 
     Ok(commits)
+}
+
+fn recent_commit_log_args(user_name: &str, user_email: &str, limit: usize) -> Vec<String> {
+    vec![
+        "log".to_string(),
+        format!("--author={user_name}"),
+        format!("--author={user_email}"),
+        "--regexp-ignore-case".to_string(),
+        format!("-n{limit}"),
+        "--pretty=format:%s".to_string(),
+    ]
 }
 
 fn tracked_changes(repo_root: &Path, max_tokens: usize) -> Result<String> {
@@ -159,7 +164,9 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::{load_root_instructions, token_chunks, truncate_with_notice};
+    use super::{
+        load_root_instructions, recent_commit_log_args, token_chunks, truncate_with_notice,
+    };
 
     #[test]
     fn keeps_short_text_unchanged() {
@@ -172,6 +179,21 @@ mod tests {
         assert_eq!(
             truncate_with_notice("hello hello hello", 2),
             "hello hello\n\n[truncated]"
+        );
+    }
+
+    #[test]
+    fn builds_recent_commit_log_args_with_separate_author_filters() {
+        assert_eq!(
+            recent_commit_log_args("Mateus Junior", "mateus@matj.dev", 3),
+            vec![
+                "log".to_string(),
+                "--author=Mateus Junior".to_string(),
+                "--author=mateus@matj.dev".to_string(),
+                "--regexp-ignore-case".to_string(),
+                "-n3".to_string(),
+                "--pretty=format:%s".to_string(),
+            ]
         );
     }
 
