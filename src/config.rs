@@ -88,6 +88,10 @@ pub(crate) fn config_file_path_from_dir(config_dir: &Path) -> PathBuf {
     config_dir.join("ai-commit").join("config.yml")
 }
 
+pub(crate) fn config_dir_from_file_path(config_path: &Path) -> Option<PathBuf> {
+    config_path.parent().map(Path::to_path_buf)
+}
+
 pub(crate) fn find_git_root(start: &Path) -> Result<PathBuf> {
     let mut current = start;
 
