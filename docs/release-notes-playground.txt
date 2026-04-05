@@ -1,1 +1,3 @@
 initial release notes fixture
+
+second line for changelog testing
