@@ -19,9 +19,15 @@ fn run() -> Result<()> {
     let cli = Cli::parse_args();
     let config = config::Config::load(cli)?;
     let repo = git::RepositoryContext::gather(&config)?;
-    let prompt = prompt::build_prompt(&repo);
+    let (prompt_text, summary) = prompt::build_prompt_with_summary(&repo);
+
+    if config.dry_run {
+        println!("{}", prompt::format_dry_run_output(&prompt_text, &summary));
+        return Ok(());
+    }
+
     let client = provider::AiClient::new(&config)?;
-    let message = client.generate_commit_message(&prompt)?;
+    let message = client.generate_commit_message(&prompt_text)?;
     println!("{}", message.trim());
     Ok(())
 }

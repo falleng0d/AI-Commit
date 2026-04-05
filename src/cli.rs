@@ -24,6 +24,9 @@ pub struct Cli {
 
     #[arg(long, default_value_t = 10_000)]
     pub max_instructions_tokens: usize,
+
+    #[arg(long)]
+    pub dry_run: bool,
 }
 
 impl Cli {

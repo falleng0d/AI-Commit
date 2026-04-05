@@ -1,4 +1,7 @@
+use std::sync::OnceLock;
+
 use crate::{config, git::RepositoryContext};
+use tiktoken_rs::{CoreBPE, cl100k_base};
 
 const DEFAULT_PROMPT_TEMPLATE: &str = include_str!("prompt.md");
 
@@ -26,6 +29,61 @@ pub fn build_prompt(context: &RepositoryContext) -> String {
         &commit_history,
         instructions,
         &context.tracked_changes,
+    )
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PromptTokenSummary {
+    pub recent_commits: usize,
+    pub instructions: usize,
+    pub tracked_changes: usize,
+    pub total_prompt: usize,
+}
+
+pub fn build_prompt_with_summary(context: &RepositoryContext) -> (String, PromptTokenSummary) {
+    let template = load_prompt_template();
+    let commit_history = if context.recent_commits.is_empty() {
+        "- No recent commits found for the current git user.".to_string()
+    } else {
+        context
+            .recent_commits
+            .iter()
+            .map(|commit| format!("- {commit}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+
+    let instructions = context
+        .instructions
+        .as_deref()
+        .unwrap_or("No CLAUDE.md or AGENTS.md file found at repository root.");
+
+    let prompt = render_prompt(
+        &template,
+        &context.repo_root,
+        &commit_history,
+        instructions,
+        &context.tracked_changes,
+    );
+
+    let summary = PromptTokenSummary {
+        recent_commits: count_tokens(&commit_history),
+        instructions: count_tokens(instructions),
+        tracked_changes: count_tokens(&context.tracked_changes),
+        total_prompt: count_tokens(&prompt),
+    };
+
+    (prompt, summary)
+}
+
+pub fn format_dry_run_output(prompt: &str, summary: &PromptTokenSummary) -> String {
+    format!(
+        "recent_commits_tokens: {}\ninstructions_tokens: {}\ntracked_changes_tokens: {}\ntotal_prompt_tokens: {}\n\n{}",
+        summary.recent_commits,
+        summary.instructions,
+        summary.tracked_changes,
+        summary.total_prompt,
+        prompt,
     )
 }
 
@@ -65,9 +123,18 @@ fn render_prompt(
         .replace("{tracked_changes}", tracked_changes)
 }
 
+fn count_tokens(value: &str) -> usize {
+    tokenizer().encode_with_special_tokens(value).len()
+}
+
+fn tokenizer() -> &'static CoreBPE {
+    static TOKENIZER: OnceLock<CoreBPE> = OnceLock::new();
+    TOKENIZER.get_or_init(|| cl100k_base().expect("failed to initialize cl100k_base tokenizer"))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::build_prompt;
+    use super::{build_prompt, build_prompt_with_summary, format_dry_run_output};
     use crate::git::RepositoryContext;
     use std::fs;
 
@@ -128,5 +195,40 @@ mod tests {
         assert!(prompt.contains("feat: add cli"));
         assert!(prompt.contains("follow rules"));
         assert!(prompt.contains("diff body"));
+    }
+
+    #[test]
+    fn build_prompt_with_summary_reports_token_counts() {
+        let (prompt, summary) = build_prompt_with_summary(&RepositoryContext {
+            repo_root: "repo".to_string(),
+            recent_commits: vec!["feat: add cli".to_string()],
+            tracked_changes: "diff body".to_string(),
+            instructions: Some("follow rules".to_string()),
+        });
+
+        assert!(prompt.contains("Repository root: repo"));
+        assert_eq!(summary.recent_commits, 5);
+        assert!(summary.instructions > 0);
+        assert!(summary.tracked_changes > 0);
+        assert!(summary.total_prompt >= summary.recent_commits);
+    }
+
+    #[test]
+    fn formats_dry_run_output_with_counts_and_prompt() {
+        let output = format_dry_run_output(
+            "prompt body",
+            &super::PromptTokenSummary {
+                recent_commits: 1,
+                instructions: 2,
+                tracked_changes: 3,
+                total_prompt: 4,
+            },
+        );
+
+        assert!(output.contains("recent_commits_tokens: 1"));
+        assert!(output.contains("instructions_tokens: 2"));
+        assert!(output.contains("tracked_changes_tokens: 3"));
+        assert!(output.contains("total_prompt_tokens: 4"));
+        assert!(output.ends_with("prompt body"));
     }
 }

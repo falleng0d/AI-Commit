@@ -14,6 +14,7 @@ pub struct Config {
     pub commit_limit: usize,
     pub max_diff_tokens: usize,
     pub max_instructions_tokens: usize,
+    pub dry_run: bool,
 }
 
 impl Config {
@@ -52,6 +53,7 @@ impl Config {
             commit_limit: cli.commit_limit,
             max_diff_tokens: cli.max_diff_tokens,
             max_instructions_tokens: cli.max_instructions_tokens,
+            dry_run: cli.dry_run,
         })
     }
 }
@@ -117,6 +119,7 @@ mod tests {
     use tempfile::tempdir;
 
     use super::{config_file_path_from_dir, find_git_root, load_file_config, normalize_host};
+    use crate::cli::Cli;
 
     #[test]
     fn trims_trailing_slash_from_host() {
@@ -179,5 +182,20 @@ mod tests {
         assert_eq!(config.host.as_deref(), Some("https://example.com/v1"));
         assert_eq!(config.api_key.as_deref(), Some("test-key"));
         assert_eq!(config.model.as_deref(), Some("test-model"));
+    }
+
+    #[test]
+    fn cli_defaults_include_dry_run_disabled() {
+        let cli = Cli {
+            host: None,
+            api_key: None,
+            model: None,
+            commit_limit: 20,
+            max_diff_tokens: 64_000,
+            max_instructions_tokens: 10_000,
+            dry_run: false,
+        };
+
+        assert!(!cli.dry_run);
     }
 }

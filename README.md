@@ -57,6 +57,9 @@ CLI flags override the config file:
 - `--commit-limit`
 - `--max-diff-tokens`
 - `--max-instructions-tokens`
+- `--dry-run`
+
+When `--dry-run` is set, the tool prints the full generated prompt plus token counts for recent commits, instructions, tracked changes, and the total prompt instead of calling the AI provider.
 
 ## Usage
 
