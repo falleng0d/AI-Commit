@@ -41,7 +41,7 @@ run *args:
   cargo run --release -- {{args}}
 
 install:
-  cargo install --path .
+  cargo install --force --path .
 
 check: fmt-check lint test
 
