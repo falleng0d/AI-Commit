@@ -4,7 +4,7 @@ mod git;
 mod prompt;
 mod provider;
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 
 use crate::cli::Cli;
 
@@ -18,6 +18,10 @@ fn main() {
 fn run() -> Result<()> {
     let cli = Cli::parse_args();
     let config = config::Config::load(cli)?;
+    if !git::RepositoryContext::has_staged_changes(&config)? {
+        return Err(anyhow!("no staged changes to commit"));
+    }
+
     let repo = git::RepositoryContext::gather(&config)?;
     let prompt_text = prompt::build_prompt(&repo);
 

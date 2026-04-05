@@ -48,6 +48,16 @@ impl RepositoryContext {
             instructions,
         })
     }
+
+    pub fn has_staged_changes(config: &Config) -> Result<bool> {
+        let output = Command::new("git")
+            .current_dir(&config.repo_root)
+            .args(["diff", "--cached", "--quiet", "--", "."])
+            .output()
+            .context("failed to execute git command")?;
+
+        Ok(!output.status.success())
+    }
 }
 
 fn recent_commits(
@@ -161,11 +171,15 @@ where
 #[cfg(test)]
 mod tests {
     use std::fs;
+    use std::process::Command;
 
     use tempfile::tempdir;
 
+    use crate::config::Config;
+
     use super::{
-        load_root_instructions, recent_commit_log_args, token_chunks, truncate_with_notice,
+        RepositoryContext, load_root_instructions, recent_commit_log_args, token_chunks,
+        truncate_with_notice,
     };
 
     #[test]
@@ -195,6 +209,41 @@ mod tests {
                 "--pretty=format:%s".to_string(),
             ]
         );
+    }
+
+    #[test]
+    fn detects_when_no_staged_changes_exist() {
+        let temp = tempdir().unwrap();
+
+        Command::new("git")
+            .args(["init"])
+            .current_dir(temp.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["config", "user.name", "Test User"])
+            .current_dir(temp.path())
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["config", "user.email", "test@example.com"])
+            .current_dir(temp.path())
+            .output()
+            .unwrap();
+        fs::write(temp.path().join("file.txt"), "hello").unwrap();
+
+        let config = Config {
+            repo_root: temp.path().to_path_buf(),
+            host: String::new(),
+            api_key: String::new(),
+            model: String::new(),
+            commit_limit: 1,
+            max_diff_tokens: 1,
+            max_instructions_tokens: 1,
+            dry_run: false,
+        };
+
+        assert!(!RepositoryContext::has_staged_changes(&config).unwrap());
     }
 
     #[test]
