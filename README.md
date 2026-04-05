@@ -2,6 +2,8 @@
 
 `ai-commit` is a Rust CLI that generates a semantic commit message from the current git repository context.
 
+The published crate name is `ai-commits`, while the installed binary is `ai-commit`.
+
 It gathers:
 
 - the last 30 commits by the current git user
@@ -62,6 +64,13 @@ cargo build --release
 target/release/ai-commit
 ```
 
+After publishing to crates.io:
+
+```bash
+cargo install ai-commits
+ai-commit
+```
+
 ## Development
 
 ```bash
@@ -69,6 +78,13 @@ cargo fmt
 cargo test
 cargo build
 ```
+
+## Release Automation
+
+The repository uses GitHub Actions and `release-plz` for automated releases.
+
+- `CI` runs formatting, linting, tests, release builds, and `cargo publish --dry-run`
+- `Release` opens release PRs, updates `CHANGELOG.md`, creates tags, creates GitHub releases, and publishes to crates.io
 
 ## Notes
 
