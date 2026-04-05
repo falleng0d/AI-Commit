@@ -51,28 +51,28 @@ publish-dry-run:
   cargo publish --dry-run --locked
 
 release-plz-check:
-  if (Test-Path "{{release_plz}}") { exit 0 }
-  if (Get-Command "{{release_plz}}" -ErrorAction SilentlyContinue) { exit 0 }
-  Write-Error "release-plz not found. Set RELEASE_PLZ to the binary path or place it at {{release_plz}}"
+  if (Test-Path "release_plz") { exit 0 }
+  if (Get-Command "release_plz" -ErrorAction SilentlyContinue) { exit 0 }
+  Write-Error "release-plz not found. Set RELEASE_PLZ to the binary path or place it at release_plz"
   exit 1
 
 release-plz-version: release-plz-check
-  {{release_plz}} --version
+  release_plz --version
 
 version: release-plz-check
-  {{release_plz}} update --config release-plz.toml
+  release_plz update --config release-plz.toml
 
 version-from registry_manifest_path: release-plz-check
-  {{release_plz}} update --config release-plz.toml --registry-manifest-path {{registry_manifest_path}}
+  release_plz update --config release-plz.toml --registry-manifest-path {{registry_manifest_path}}
 
 release-pr: release-plz-check
-  {{release_plz}} release-pr --config release-plz.toml
+  release_plz release-pr --config release-plz.toml
 
 release-dry-run: release-plz-check
-  {{release_plz}} release --config release-plz.toml --dry-run
+  release_plz release --config release-plz.toml --dry-run
 
 release: release-plz-check
-  {{release_plz}} release --config release-plz.toml
+  release_plz release --config release-plz.toml
 
 gh-ci:
   gh workflow run {{ci_workflow}} --ref {{default_branch}}
