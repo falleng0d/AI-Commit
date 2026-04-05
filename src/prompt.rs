@@ -95,7 +95,7 @@ mod tests {
         let temp = tempdir().unwrap();
 
         assert_eq!(load_prompt_template_from_config_dir(temp.path()), None);
-        assert!(DEFAULT_PROMPT_TEMPLATE.contains("You are generating a git commit message."));
+        assert!(DEFAULT_PROMPT_TEMPLATE.contains("You are generating a git commit message"));
     }
 
     #[test]
