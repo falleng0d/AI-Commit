@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.1.4](https://github.com/falleng0d/AI-Commit/compare/v0.1.3...v0.1.4) - 2026-04-05
+
+### Added
+
+- add dry-run mode with token count reporting and prompt preview
+
+
+### Fixed
+
+- split recent commit log args into reusable function with separate author filters
+
 ## [0.1.3](https://github.com/falleng0d/AI-Commit/compare/v0.1.2...v0.1.3) - 2026-04-05
 
 ### Added
