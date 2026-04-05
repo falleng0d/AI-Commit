@@ -6,6 +6,7 @@ crate_name := "ai-commits"
 default_branch := "master"
 ci_workflow := "ci.yml"
 release_workflow := "release-plz.yml"
+gnu_lld := "C:/ProgramData/chocolatey/lib/rust/tools/lib/rustlib/x86_64-pc-windows-gnu/bin/rust-lld.exe"
 
 default:
   just --list
@@ -23,22 +24,22 @@ fmt-check:
   cargo fmt --check
 
 lint:
-  cargo clippy --all-targets --all-features -- -D warnings
+  cargo clippy --config 'target.x86_64-pc-windows-gnu.linker="{{gnu_lld}}"' --all-targets --all-features -- -D warnings
 
 test:
-  cargo test
+  $env:CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = '{{gnu_lld}}'; cargo test
 
 build:
-  cargo build
+  $env:CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = '{{gnu_lld}}'; cargo build
 
 build-release:
-  cargo build --release
+  $env:CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = '{{gnu_lld}}'; cargo build --release
 
 run *args:
-  cargo run --release -- {{args}}
+  $env:CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = '{{gnu_lld}}'; cargo run --release -- {{args}}
 
 install:
-  cargo install --path .
+  $env:CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = '{{gnu_lld}}'; cargo install --path .
 
 check: fmt-check lint test
 
@@ -48,7 +49,7 @@ package:
   cargo package --locked
 
 publish-dry-run:
-  cargo publish --dry-run --locked
+  $env:CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = '{{gnu_lld}}'; cargo publish --dry-run --locked
 
 release-plz-check:
   if (Test-Path "release_plz") { exit 0 }
