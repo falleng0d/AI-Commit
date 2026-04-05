@@ -19,12 +19,19 @@ refactor: Reformat code
 ## Configuration
 
 Configuration is loaded from `config.yml` in the OS config directory.
+The prompt template is loaded from `PROMPT.md` in the same directory when present, otherwise the embedded default prompt is used.
 
 Examples:
 
 - Windows: `%APPDATA%\ai-commit\config.yml`
 - macOS: `~/Library/Application Support/ai-commit/config.yml`
 - Linux: `~/.config/ai-commit/config.yml`
+
+Prompt override file:
+
+- Windows: `%APPDATA%\ai-commit\PROMPT.md`
+- macOS: `~/Library/Application Support/ai-commit/PROMPT.md`
+- Linux: `~/.config/ai-commit/PROMPT.md`
 
 Example file:
 
