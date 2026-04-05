@@ -55,8 +55,8 @@ CLI flags override the config file:
 - `--api-key`
 - `--model`
 - `--commit-limit`
-- `--max-diff-chars`
-- `--max-instructions-chars`
+- `--max-diff-tokens`
+- `--max-instructions-tokens`
 
 ## Usage
 

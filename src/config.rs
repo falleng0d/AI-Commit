@@ -12,8 +12,8 @@ pub struct Config {
     pub api_key: String,
     pub model: String,
     pub commit_limit: usize,
-    pub max_diff_chars: usize,
-    pub max_instructions_chars: usize,
+    pub max_diff_tokens: usize,
+    pub max_instructions_tokens: usize,
 }
 
 impl Config {
@@ -50,8 +50,8 @@ impl Config {
                 .or(file_config.model)
                 .unwrap_or_else(|| "gpt-4o".to_string()),
             commit_limit: cli.commit_limit,
-            max_diff_chars: cli.max_diff_chars,
-            max_instructions_chars: cli.max_instructions_chars,
+            max_diff_tokens: cli.max_diff_tokens,
+            max_instructions_tokens: cli.max_instructions_tokens,
         })
     }
 }

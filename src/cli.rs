@@ -16,14 +16,14 @@ pub struct Cli {
     #[arg(long)]
     pub model: Option<String>,
 
-    #[arg(long, default_value_t = 30)]
+    #[arg(long, default_value_t = 20)]
     pub commit_limit: usize,
 
-    #[arg(long, default_value_t = 20_000)]
-    pub max_diff_chars: usize,
+    #[arg(long, default_value_t = 64_000)]
+    pub max_diff_tokens: usize,
 
-    #[arg(long, default_value_t = 8_000)]
-    pub max_instructions_chars: usize,
+    #[arg(long, default_value_t = 10_000)]
+    pub max_instructions_tokens: usize,
 }
 
 impl Cli {

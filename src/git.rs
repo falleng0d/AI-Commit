@@ -1,7 +1,9 @@
 use std::path::Path;
 use std::process::Command;
+use std::sync::OnceLock;
 
 use anyhow::{Context, Result, anyhow};
+use tiktoken_rs::{CoreBPE, cl100k_base};
 
 use crate::config::Config;
 
@@ -35,9 +37,9 @@ impl RepositoryContext {
             &user_email,
             config.commit_limit,
         )?;
-        let tracked_changes = tracked_changes(&config.repo_root, config.max_diff_chars)?;
+        let tracked_changes = tracked_changes(&config.repo_root, config.max_diff_tokens)?;
         let instructions =
-            load_root_instructions(&config.repo_root, config.max_instructions_chars)?;
+            load_root_instructions(&config.repo_root, config.max_instructions_tokens)?;
 
         Ok(Self {
             repo_root: config.repo_root.display().to_string(),
@@ -75,7 +77,7 @@ fn recent_commits(
     Ok(commits)
 }
 
-fn tracked_changes(repo_root: &Path, max_chars: usize) -> Result<String> {
+fn tracked_changes(repo_root: &Path, max_tokens: usize) -> Result<String> {
     let staged = git_output(repo_root, ["diff", "--cached", "--", "."])?;
     let unstaged = git_output(repo_root, ["diff", "--", "."])?;
     let summary = git_output(repo_root, ["status", "--short", "--untracked-files=no"])?;
@@ -83,34 +85,50 @@ fn tracked_changes(repo_root: &Path, max_chars: usize) -> Result<String> {
     let combined =
         format!("STATUS\n{summary}\n\nSTAGED DIFF\n{staged}\n\nUNSTAGED DIFF\n{unstaged}");
 
-    Ok(truncate_with_notice(&combined, max_chars))
+    Ok(truncate_with_notice(&combined, max_tokens))
 }
 
-pub(crate) fn load_root_instructions(repo_root: &Path, max_chars: usize) -> Result<Option<String>> {
+pub(crate) fn load_root_instructions(
+    repo_root: &Path,
+    max_tokens: usize,
+) -> Result<Option<String>> {
     let claude = repo_root.join("CLAUDE.md");
     if claude.is_file() {
         let content = std::fs::read_to_string(&claude)
             .with_context(|| format!("failed to read {}", claude.display()))?;
-        return Ok(Some(truncate_with_notice(&content, max_chars)));
+        return Ok(Some(truncate_with_notice(&content, max_tokens)));
     }
 
     let agents = repo_root.join("AGENTS.md");
     if agents.is_file() {
         let content = std::fs::read_to_string(&agents)
             .with_context(|| format!("failed to read {}", agents.display()))?;
-        return Ok(Some(truncate_with_notice(&content, max_chars)));
+        return Ok(Some(truncate_with_notice(&content, max_tokens)));
     }
 
     Ok(None)
 }
 
-fn truncate_with_notice(value: &str, max_chars: usize) -> String {
-    if value.chars().count() <= max_chars {
+fn truncate_with_notice(value: &str, max_tokens: usize) -> String {
+    let tokens = token_chunks(value);
+
+    if tokens.len() <= max_tokens {
         return value.to_string();
     }
 
-    let truncated: String = value.chars().take(max_chars).collect();
+    let truncated: String = tokens.into_iter().take(max_tokens).collect();
     format!("{truncated}\n\n[truncated]")
+}
+
+fn token_chunks(value: &str) -> Vec<String> {
+    tokenizer()
+        .split_by_token_ordinary(value)
+        .unwrap_or_else(|_| vec![value.to_string()])
+}
+
+fn tokenizer() -> &'static CoreBPE {
+    static TOKENIZER: OnceLock<CoreBPE> = OnceLock::new();
+    TOKENIZER.get_or_init(|| cl100k_base().expect("failed to initialize cl100k_base tokenizer"))
 }
 
 fn git_output<I, S>(repo_root: &Path, args: I) -> Result<String>
@@ -141,7 +159,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use super::{load_root_instructions, truncate_with_notice};
+    use super::{load_root_instructions, token_chunks, truncate_with_notice};
 
     #[test]
     fn keeps_short_text_unchanged() {
@@ -149,8 +167,12 @@ mod tests {
     }
 
     #[test]
-    fn truncates_long_text_with_marker() {
-        assert_eq!(truncate_with_notice("abcdef", 4), "abcd\n\n[truncated]");
+    fn truncates_by_tokens_not_characters() {
+        assert_eq!(token_chunks("hello hello hello").len(), 3);
+        assert_eq!(
+            truncate_with_notice("hello hello hello", 2),
+            "hello hello\n\n[truncated]"
+        );
     }
 
     #[test]
