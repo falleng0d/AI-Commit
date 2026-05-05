@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [0.1.6](https://github.com/falleng0d/AI-Commit/compare/v0.1.5...v0.1.6) - 2026-05-05
+
+### Fixed
+
+- Nudge LLM to make the commit message based off the staged changes
+
 ## [0.1.5](https://github.com/falleng0d/AI-Commit/compare/v0.1.4...v0.1.5) - 2026-04-05
 
 ### Added
