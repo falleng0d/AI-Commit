@@ -5,7 +5,9 @@ Use a single line. Keep it concise and specific
 Prefer matching the user's recent commit style when it fits the current changes
 Do not wrap the response in quotes or markdown
 Don't add a dot (.) at the end of the commit message
+Base the commit message on the staged changes (tracked_changes_staged_diff)
 
+<semantic_commit>
 Semantic commit message types overview:
 - `feat`: A new feature
 - `fix`: A bug fix
@@ -29,6 +31,7 @@ Changes related to a specific feature or component can be further categorized us
 Example scopes:
 `feat(parser): Add ability to parse arrays`
 `fix(frontend/ui): Fix button alignment on mobile`
+</semantic_commit>
 
 Repository root: {repo_root}
 
@@ -55,3 +58,4 @@ Use a single line. Keep it concise and specific
 Prefer matching the user's recent commit style when it fits the current changes
 Do not wrap the response in quotes or markdown
 Don't add a dot (.) at the end of the commit message
+IMPORTANT: Consider only the STAGED changes, the UNSTAGED changes are not relevant to this commit and serve only to provide context

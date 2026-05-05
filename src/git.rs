@@ -98,7 +98,7 @@ fn tracked_changes(repo_root: &Path, max_tokens: usize) -> Result<String> {
     let summary = git_output(repo_root, ["status", "--short", "--untracked-files=no"])?;
 
     let combined =
-        format!("STATUS\n{summary}\n\nSTAGED DIFF\n{staged}\n\nUNSTAGED DIFF\n{unstaged}");
+        format!("<tracked_changes_status>:\n{summary}\n</tracked_changes_status>\n\n<tracked_changes_unstaged_diff>:\n{unstaged}\n</tracked_changes_unstaged_diff>\n\n<tracked_changes_staged_diff>:\n{staged}\n</tracked_changes_staged_diff>");
 
     Ok(truncate_with_notice(&combined, max_tokens))
 }
